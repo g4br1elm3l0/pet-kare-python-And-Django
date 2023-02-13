@@ -63,15 +63,19 @@ class PetDetailView(APIView):
         serializer = PetSerializer(data=req.data, partial=True)
         serializer.is_valid(raise_exception=True)
 
-        group_data = serializer.validated_data.pop("group", None)
+        group_data: dict = serializer.validated_data.pop("group", None)
 
         if group_data:
             try:
-                for key, value in group_data.items():
-                    setattr(pet.group, key, value)
-                pet.group.save()
-            except Pet.group.RelatedObjectDoesNotExist:
-                group_obj = Group.objects.create(**group_data, pets=pet)
+                group_obj = Group.objects.get(
+                    scientific_name__iexact=group_data["scientific_name"]
+                )
+
+            except Group.DoesNotExist:
+                group_obj = Group.objects.create(**group_data)
+
+            pet.group = group_obj
+            pet.save()
 
         for key, value in serializer.validated_data.items():
             setattr(pet, key, value)
