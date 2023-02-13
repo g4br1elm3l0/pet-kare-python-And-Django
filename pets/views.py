@@ -1,3 +1,4 @@
+import ipdb
 from django.shortcuts import get_object_or_404
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.views import APIView, Request, Response, status
@@ -64,6 +65,16 @@ class PetDetailView(APIView):
         serializer.is_valid(raise_exception=True)
 
         group_data: dict = serializer.validated_data.pop("group", None)
+        trait_data: dict = serializer.validated_data.pop("traits", None)
+
+        if trait_data:
+            pet.traits.clear()
+            for trait in trait_data:
+                try:
+                    trait_obj = Trait.objects.get(name__iexact=trait["name"])
+                except Trait.DoesNotExist:
+                    trait_obj = Trait.objects.create(**trait)
+                pet.traits.add(trait_obj)
 
         if group_data:
             try:
